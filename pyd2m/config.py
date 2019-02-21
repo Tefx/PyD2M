@@ -88,6 +88,9 @@ class Config:
     def __getitem__(self, item):
         return self.DATA[item]
 
+    def __contains__(self, item):
+        return item in self.DATA
+
     def exists(self, path):
         return path in self.DATA
 
