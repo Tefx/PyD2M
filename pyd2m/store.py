@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import numpy as np
 import pickle
+import msgpack
 
 
 class DataStore:
@@ -53,6 +54,18 @@ class DSMsgpack(DataStore):
 
     def load(self, path, config):
         return pd.read_msgpack(path)
+
+
+class DSMsgpackNonDF(DataStore):
+    TYPE_TAG = "msgpack_ndf"
+
+    def dump(self, path, data, config):
+        with open(path, "wb") as f:
+            msgpack.pack(data, f, use_bin_type=True)
+
+    def load(self, path, config):
+        with open(path, "rb") as f:
+            return msgpack.unpack(f)
 
 
 import feather

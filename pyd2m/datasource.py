@@ -30,7 +30,7 @@ class DataSource:
     def __init__(self, data_path, config_path=None,
                  clear_cache=False, clear_tmp=True, cache_in_memory=False, **vars):
         self.base = os.path.realpath(data_path)
-        self.config_base = config_path or os.path.join(self.base, ".conf")
+        self.config_base = config_path or os.path.join(self.base, "conf")
         self.cache_in_memory = cache_in_memory
         self.mem_cache = {}
 
