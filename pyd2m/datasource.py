@@ -44,7 +44,7 @@ class DataSource:
         self.config_file = os.path.join(self.config_base, "d2m.rc")
         self.config = Config()
         with open(self.config_file, "r") as f:
-            for config in yaml.load(f.read()):
+            for config in yaml.load(f.read(), Loader=yaml.FullLoader):
                 self.config.update(config)
 
         for name, cls in inspect.getmembers(store, inspect.isclass):
