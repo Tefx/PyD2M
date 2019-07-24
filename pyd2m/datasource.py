@@ -258,7 +258,7 @@ class DataSource:
             print("Fields not found: ", unknown_fields)
 
     @staticmethod
-    def print_fields(df):
+    def describe_frame(df):
         print("- {}: {}".format(df.index.name, df.index.dtype))
         print("\n".join("- {}: {}".format(s, df[s].dtype) for s in df.columns.tolist()))
 
@@ -273,16 +273,14 @@ class DataSource:
     def params(self):
         return self.config.PARAMS
 
-    def autogen_scheme(self, fs, skip_path=None):
+    def autogen_scheme(self, path_or_fields, skip_path=None):
         skip_path = [] if skip_path is None else skip_path
-        if isinstance(fs, str):
-            skip_path.append(fs)
-            fs = self.fields(fs)
-        else:
-            fs = fs
+        if isinstance(path_or_fields, str):
+            skip_path.append(path_or_fields)
+            path_or_fields = self.fields(path_or_fields)
 
-        rfs = self.related_data(fs, path=skip_path)[0]
-        needs = set(fs)
+        rfs = self.related_data(path_or_fields, path=skip_path)[0]
+        needs = set(path_or_fields)
         gets = set()
 
         if not rfs:
@@ -305,11 +303,11 @@ class DataSource:
                     needs -= fields
                     can_join = True
 
-        return base, joins, needs, fs
+        return base, joins, needs, path_or_fields
 
-    def autogen(self, path, how="inner", skip_path=None):
+    def autogen(self, path_or_fields, how="inner", skip_path=None):
         skip_path = [] if skip_path is None else skip_path
-        base, joins, unknown, fs = self.autogen_scheme(path, skip_path=skip_path)
+        base, joins, unknown, fs = self.autogen_scheme(path_or_fields, skip_path=skip_path)
         data = self.load(base[0])[base[1]].copy()
         print("Base: ", base[0])
         for path, keys, fields in joins:
