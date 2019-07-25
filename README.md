@@ -575,9 +575,9 @@ dataset
 ```
 
 ## Auto-recipe, Steps and Quick-recipes
-Sometimes, we can let PyD2M automatically generate the recipes for use.
+Sometimes, PyD2M can automatically generate recipes for use.
 For example, if we want to save the boxes' unloading information separately 
-in a file name `box_unloading_info.csv` defined as follows,
+in a file named `box_unloading_info.csv`, which is defined as follows.
 ```
 - DATA:
     ...
@@ -591,7 +591,7 @@ in a file name `box_unloading_info.csv` defined as follows,
                     - UnloadingPosition: int
                     - UnloadingTime: datetime64[s]
 ```
-instead of writing a function like
+Instead of writing a function like
 ```
 @recipe("tmp/{exp}/box_unloading_info.csv")
 def gen_box_unloading_info(cb):
@@ -610,9 +610,9 @@ from pyd2m.cookbook import auto_recipe
 auto_recipe("tmp/{exp}/box_unloading_info.csv")
 ```
 
-On the other hand, **Steps** is some pre-defined operation that can simplify
-the recipes. Say, if we want to save each vessel's berthing info in seperate
-file
+On the other hand, **Steps** are some pre-defined operation that can simplify
+the recipes. Say, if we want to save different vessel's berthing info in separate
+files
 ```
 - DATA:
     ...
