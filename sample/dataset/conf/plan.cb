@@ -2,21 +2,31 @@ from pyd2m.cookbook import recipe
 import pandas as pd
 import numpy as np
 
-#
-# @recipe("plan/berthing.msg")
-# def gen_berthing_plan(cb):
-#     df = cb.DS["VesselArrivalID", "Length", "ArrivalTime"]
-#     df["MooringPosition"] = df.apply(lambda v: np.random.randint(0, 3000 - v.Length), axis=1)
-#     df["MooringTime"] = df.ArrivalTime + pd.to_timedelta(np.random.random(size=len(df)), unit="h")
-#     df["HandlingTime"] = pd.to_timedelta(np.random.uniform(4, 12, size=len(df)), unit="h")
-#     df["HandlingTime"] = pd.to_timedelta(np.random.uniform(4, 12, size=len(df)), unit="h")
-#     return df
 
-
-@recipe(ingredients=["raw/vessel_info.csv"], dishes=["plan/berthing.msg"])
-def gen_berthing_plan(cb, df):
+@recipe("plan/berthing.msg")
+def gen_berthing_plan(cb):
+    df = cb.DS["VesselArrivalID", "Length", "ArrivalTime"]
     df["MooringPosition"] = df.apply(lambda v: np.random.randint(0, cb.DS.QUAY_LENGTH - v.Length), axis=1)
     df["MooringTime"] = df.ArrivalTime + pd.to_timedelta(np.random.random(size=len(df)) * cb.DS.MAX_WAITING_TIME, unit="s")
     df["HandlingTime"] = pd.to_timedelta(np.random.uniform(4, 12, size=len(df)), unit="h")
     df["HandlingTime"] = pd.to_timedelta(np.random.uniform(4, 12, size=len(df)), unit="h")
     return df
+
+
+@recipe("plan/box_pos_time.msg")
+def gen_box_pos_time(cb):
+    vel_info = cb.DS["VesselArrivalID", "MooringPosition", "Length", "MooringTime", "HandlingTime"]
+
+    df_u = cb.DS["BoxID", "UnloadingVesselArrivalID"].merge(
+        vel_info, left_on="UnloadingVesselArrivalID", right_on="VesselArrivalID")
+
+    df_u["UnloadingPosition"] = df_u.Length * np.random.random(size=len(df_u)) + df_u.MooringPosition
+    df_u["UnloadingTime"] = df_u.HandlingTime * np.random.random(size=len(df_u)) + df_u.MooringTime
+
+    df_l = cb.DS["BoxID", "LoadingVesselArrivalID"].merge(
+        vel_info, left_on="LoadingVesselArrivalID", right_on="VesselArrivalID")
+
+    df_l["LoadingPosition"] = df_l.Length * np.random.random(size=len(df_l)) + df_l.MooringPosition
+    df_l["LoadingTime"] = df_l.HandlingTime * np.random.random(size=len(df_l)) + df_l.MooringTime
+
+    return df_u.merge(df_l, on="BoxID")

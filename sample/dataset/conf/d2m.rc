@@ -45,8 +45,8 @@
         TYPE: msgpack
         DECLARE_NEW_FIELDS: True
         FIELDS:
-          - BoxID: object
-          - UnloadingPosition: float64
+          - BoxID: str
+          - UnloadingPosition: int
           - UnloadingTime: datetime64[s]
-          - LoadingPosition: float64
+          - LoadingPosition: int
           - LoadingTime: datetime64[s]

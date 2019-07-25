@@ -2,7 +2,7 @@
 
 PyD2M is a easy management tool of pandas DataFrames.
 
-# Tutorial (**unfinished**)
+# Tutorial
 
 In this tutorial, we use PyD2M to manage the data for a simulation of 
 *transshipment container port*. In a container port, a t*ransshipment 
@@ -84,6 +84,7 @@ Or, we can directly use the field names to load the data:
 ```
 >>> ds["VesselID", "Length", "ArrivalTime"]
 Base:  raw/vessel_info.csv
+
 	VesselID 	Length 	ArrivalTime
 0 	4 	344 	7257
 1 	6 	294 	16757
@@ -97,6 +98,7 @@ Also, we can access only partial of the data and change the order of columns:
 ```
 >> ds["ArrivalTime", "Length"]
 Base:  raw/vessel_info.csv
+
  	ArrivalTime 	Length
 0 	7257 	344
 1 	16757 	294
@@ -116,8 +118,6 @@ refer to the visit more easily. The `VesselArrivalID` will be defined as
 
 Thus, let's add a **hook** to this file. First, we create a 
 **hook file** named `vessels.hk` and put it into the `conf` sub-directory.
-The filename can be arbitrary, but the extension name must be `.hk`. As long as
-a `.hk` file is in the `conf` directory, it will be loaded automatically.
 <pre><code>
 dataset
 +-- conf
@@ -126,6 +126,10 @@ dataset
 +-- raw
 |   +-- vessel_info.csv
 </pre>
+
+* **Note**: The names of the hook file can be arbitrary, as long as their
+extension names are `.hk`. there can be multiple `.hk` files in the `conf`
+directory, and they will be loaded automatically.
 
 Then, we add the following context to the `vessels.hk` file.
 ```
@@ -162,6 +166,7 @@ Let's load this file/fields again:
 >>> ds = DataSource("./dataset")
 >>> ds["VesselArrivalID", "ArrivalTime", "Length"]
 Base:  raw/vessel_info.csv
+
 	VesselArrivalID 	ArrivalTime 	Length
 0 	0101V7 	2019-01-01 04:13:07 	101
 1 	0101V0 	2019-01-01 06:03:26 	335
@@ -290,6 +295,7 @@ field directly.
 ...
 >>> ds["VesselArrivalID", "MooringTime"]
 Base:  plan/berthing.msg
+
 	VesselArrivalID 	MooringTime
 0 	0101V8 	2019-01-01 02:25:22
 1 	0101V7 	2019-01-01 05:57:56
@@ -325,8 +331,142 @@ See? PyD2M has done this joining automatically!
 
 ## Cookbook
 
+A *cookbook* contains a series of *recipes*. Each recipe is a function which
+generate new dataframes (*dishes*) using exists dataframes (ingredients).
 
-  
+Now, let's generate each container's unloading/loading time and position 
+at the quay according to the vessel information. The results will be saved
+in `plan/box_pos_time.msg`. First, add the file's information in the
+configuration file.
+```
+- DATA:
+    ...
+    
+    plan:
+      ...
+      
+      box_pos_time.msg:
+        TYPE: msgpack
+        FIELDS:
+          - BoxID: str
+          - UnloadingPosition: int
+          - UnloadingTime: datetime64[s]
+          - LoadingPosition: int
+          - LoadingTime: datetime64[s]
+```
+
+Then, create a file `plan.cb` in `conf` directory and add the following
+code to it. Again, the filename can be arbitrary as long as the extension 
+name is `.cb`. 
+```
+@recipe("plan/box_pos_time.msg")
+def gen_box_pos_time(cb):
+    vel_info = cb.DS["VesselArrivalID", "MooringPosition", "Length", "MooringTime", "HandlingTime"]
+
+    df_u = cb.DS["BoxID", "UnloadingVesselArrivalID"].merge(
+        vel_info, left_on="UnloadingVesselArrivalID", right_on="VesselArrivalID")
+
+    df_u["UnloadingPosition"] = df_u.Length * np.random.random(size=len(df_u)) + df_u.MooringPosition
+    df_u["UnloadingTime"] = df_u.HandlingTime * np.random.random(size=len(df_u)) + df_u.MooringTime
+
+    df_l = cb.DS["BoxID", "LoadingVesselArrivalID"].merge(
+        vel_info, left_on="LoadingVesselArrivalID", right_on="VesselArrivalID")
+
+    df_l["LoadingPosition"] = df_l.Length * np.random.random(size=len(df_l)) + df_l.MooringPosition
+    df_l["LoadingTime"] = df_l.HandlingTime * np.random.random(size=len(df_l)) + df_l.MooringTime
+
+    return df_u.merge(df_l, on="BoxID")
+```
+
+* **Note**: We can also indicate the recipe's ingredients and dishes 
+manually as follows.
+```
+@recipe(ingredients=["raw/vessel_info.csv", "plan/berthing.msg"], dishes=["plan/box_pos_time.msg"])
+def gen_box_pos_time(cb, vel, bth):
+    vel_info = vel.merge(bth, on="VesselArrivalID")
+    ...
+```
+In this case, the parameters after `cb` are the DataFrames in the 
+ingredient list, separately.
+
+Now, let load boxes' unloading information directly.
+```
+>>>ds["BoxID", "UnloadingVesselArrivalID", "UnloadingPosition", "UnloadingTime]
+Generating plan/box_pos_time.msg
+[] => ['plan/box_pos_time.msg'] By <CookBook.gen_box_pos_time>
+Base:  plan/berthing.msg
+Joining: raw/vessel_info.csv
+Base:  raw/box_info.csv
+Base:  raw/box_info.csv
+Base:  plan/box_pos_time.msg
+Joining: raw/box_info.csv
+
+	BoxID 	UnloadingVesselArrivalID 	UnloadingPosition 	UnloadingTime
+0 	0 	0101V0 	2510 	2019-01-01 13:20:21
+1 	105 	0101V0 	2737 	2019-01-01 13:54:03
+2 	142 	0101V0 	2544 	2019-01-01 08:08:59
+3 	224 	0101V0 	2388 	2019-01-01 14:47:23
+4 	283 	0101V0 	2727 	2019-01-01 11:25:09
+5 	324 	0101V0 	2707 	2019-01-01 07:26:47
+```
+The `box_pos_time.msg` has been generated automatically and the fields are
+extracted/joined correctly! Now, the structure of the `dataset` directory
+is as follows.
+<pre><code>
+dataset
++-- conf
+|   +-- d2m.rc
+|   +-- vessels.hk
+|   +-- <b>plan.cb</b>
++-- raw
+|   +-- vessel_info.csv
+|   +-- box_info.csv
++-- plan
+|   +-- berthing.msg
+|   +-- <b>box_pos_time.msg</b>
+</pre>
+
+
+We can also add the recipe of file `berthing.msg` into the cookbook, by
+adding the following to `plan.cb` (or another `.cb` file, there can be as
+many as you want `.cb` files in the `conf` directory and they will all be
+loaded automatically). 
+```
+@recipe("plan/berthing.msg")
+def gen_berthing_plan(cb):
+    df = cb.DS["VesselArrivalID", "Length", "ArrivalTime"]
+    df["MooringPosition"] = df.apply(lambda v: np.random.randint(0, cb.DS.QUAY_LENGTH - v.Length), axis=1)
+    df["MooringTime"] = df.ArrivalTime + pd.to_timedelta(np.random.random(size=len(df)) * cb.DS.MAX_WAITING_TIME, unit="s")
+    df["HandlingTime"] = pd.to_timedelta(np.random.uniform(4, 12, size=len(df)), unit="h")
+    df["HandlingTime"] = pd.to_timedelta(np.random.uniform(4, 12, size=len(df)), unit="h")
+    return df
+```
+
+Now, let's delete the whole `plan` directory under `dataset`, and then access
+boxes' information.
+```
+>>> ds["BoxID", "LoadingVesselArrivalID", "LoadingPosition", "LoadingTime"]
+Generating plan/box_pos_time.msg
+[] => ['plan/box_pos_time.msg'] By <CookBook.gen_box_pos_time>
+Generating plan/berthing.msg
+['raw/vessel_info.csv'] => ['plan/berthing.msg'] By <CookBook.gen_berthing_plan>
+Base:  plan/berthing.msg
+Joining: raw/vessel_info.csv
+Base:  raw/box_info.csv
+Base:  raw/box_info.csv
+Base:  plan/box_pos_time.msg
+Joining: raw/box_info.csv
+
+	BoxID 	LoadingVesselArrivalID 	LoadingPosition 	LoadingTime
+0 	0 	0106V3 	625 	2019-01-06 11:02:05
+1 	84 	0128V4 	2648 	2019-01-28 08:12:10
+2 	105 	0110V1 	2002 	2019-01-11 00:01:40
+3 	129 	0119V1 	1144 	2019-01-19 23:47:53
+4 	132 	0116V6 	2626 	2019-01-16 19:53:44
+5 	142 	0101V2 	2406 	2019-01-02 07:28:23
+...
+```
+Whoosh! The data have returned!
 
 # APIs
 ## DataSource
