@@ -105,3 +105,7 @@ venv.bak/
 /.idea/
 
 sample/dataset/plan/
+
+sample/dataset/plan_exp_1/
+
+sample/dataset/plan_exp_2/

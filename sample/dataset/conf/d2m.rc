@@ -1,12 +1,8 @@
 - DEFAULTS:
-    #    TYPE: msgpack
-    #    DECLARE_NEW_FIELDS: False
+    TYPE: csv
+    DECLARE_NEW_FIELDS: True
     LOCAL_FIELDS_ONLY: False
     FREE_FIELDS: False
-#    INDEX: False
-#    FRAME: True
-#    CSV_DUMP_ARG:
-#      index: False
 
 - PARAMS:
     QUAY_LENGTH: 3000
@@ -15,8 +11,6 @@
 - DATA:
     raw:
       vessel_info.csv:
-        TYPE: csv
-        DECLARE_NEW_FIELDS: True
         FIELDS:
           - VesselID: str
           - Length: int
@@ -24,17 +18,15 @@
           - VesselArrivalID: str
 
       box_info.csv:
-        TYPE: csv
         DECLARE_NEW_FIELDS: True
         FIELDS:
           - BoxID: str
           - UnloadingVesselArrivalID: str
           - LoadingVesselArrivalID: str
 
-    plan:
+    'plan_{exp}':
       berthing.msg:
         TYPE: msgpack
-        DECLARE_NEW_FIELDS: True
         FIELDS:
           - VesselArrivalID: str
           - MooringPosition: int
@@ -43,7 +35,6 @@
 
       box_pos_time.msg:
         TYPE: msgpack
-        DECLARE_NEW_FIELDS: True
         FIELDS:
           - BoxID: str
           - UnloadingPosition: int

@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 
-@recipe("plan/berthing.msg")
+@recipe("plan_{exp}/berthing.msg")
 def gen_berthing_plan(cb):
     df = cb.DS["VesselArrivalID", "Length", "ArrivalTime"]
     df["MooringPosition"] = df.apply(lambda v: np.random.randint(0, cb.DS.QUAY_LENGTH - v.Length), axis=1)
@@ -13,7 +13,7 @@ def gen_berthing_plan(cb):
     return df
 
 
-@recipe("plan/box_pos_time.msg")
+@recipe("plan_{exp}/box_pos_time.msg")
 def gen_box_pos_time(cb):
     vel_info = cb.DS["VesselArrivalID", "MooringPosition", "Length", "MooringTime", "HandlingTime"]
 
