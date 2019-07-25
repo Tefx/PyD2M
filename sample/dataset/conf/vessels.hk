@@ -1,0 +1,9 @@
+from pyd2m import hooks
+import pandas as pd
+
+
+@hooks.load("raw/vessel_info.csv")
+def vel_load_hook(df):
+    df.ArrivalTime = pd.to_timedelta(df.ArrivalTime, unit="s") + pd.to_datetime("2019")
+    df["VesselArrivalID"] = df.ArrivalTime.dt.strftime("%m%d") + "V" + df.VesselID.astype(str)
+    return df
