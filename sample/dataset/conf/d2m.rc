@@ -41,3 +41,11 @@
           - UnloadingTime: datetime64[s]
           - LoadingPosition: int
           - LoadingTime: datetime64[s]
+
+    tmp:
+      '{exp}':
+        box_unloading_info.csv:
+          FIELDS:
+            - BoxID: str
+            - UnloadingPosition: int
+            - UnloadingTime: datetime64[s]
