@@ -117,7 +117,7 @@ is in the format of `{MMDD}V{VesselID}`.
 
 Thus, let's add a **hook** to the file. First, we create a 
 **hook file** named `vessels.hk` and put it into the `conf` sub-directory.
-<pre><code>
+<pre>
 dataset
 +-- conf
 |   +-- d2m.rc
@@ -420,7 +420,7 @@ Joining: raw/box_info.csv
 The `box_pos_time.msg` has been generated automatically and the fields are
 extracted/joined correctly! Now, the structure of the `dataset` directory
 is as follows.
-<pre><code>
+<pre>
 dataset
 +-- conf
 |   +-- d2m.rc
