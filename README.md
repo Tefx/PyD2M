@@ -1,10 +1,13 @@
 # PyD2M
 
-PyD2M is a easy management tool of pandas DataFrames.
+PyD2M is a dependency management tool for pandas DataFrames. In brief, it does two things:
+
+1. Automatically extract and join data fields from different data files (in different formats: csv, msgpack, etc.)
+2. Generate new data and save them to files according to some pre-defined *recipes*
 
 # Tutorial
 
-In this tutorial, we use PyD2M to manage the data for a simulation of 
+In this tutorial, we use PyD2M to manage the data for the simulation of a
 *transshipment container port*. In a container port, a *transshipment 
 container* will be discharged from the first vessel, stored somewhere in 
 the terminal's storage yard for a few days. and then be loaded to its
@@ -43,8 +46,9 @@ dataset
 ```
 
 `conf/d2m.rc` is the default location for a PyD2M dataset's 
-configuration. The configuration file is in YAML format. First, add 
-the following context to this file:
+configuration. The configuration file is in YAML format. 
+
+Let's add the following context to this file:
 
 ```
 - DATA:
@@ -60,7 +64,7 @@ the following context to this file:
           - ArrivalTime: int
 ```
 
-Then, the data is ready for managing by PyD2M! First, let's import PyD2M 
+Now, the data is ready to be managed by PyD2M. First, let's import PyD2M 
 and create a `DataSource` object:
 ```
 >>> from pyd2m.datasource import DataSource
@@ -109,11 +113,11 @@ Base:  raw/vessel_info.csv
 ...
 ```
 
-However, one may find the original data is not convenient for data analytics.
-For example, we would like the `ArrivalTime` to be in a more human-readable 
-`datatime` format instead of the integers. And also, we would like to add
-a unique `VesselArrivalID` to each visit of the vessels, where the `VesselArrivalID` 
-is in the format of `{MMDD}V{VesselID}`.
+However, one may find the original data is not so convenient for data analytics.
+For example, we would like the `ArrivalTime` to be in the more human-readable 
+`datatime` format instead of the integers. And also, we would like to generate
+a unique `VesselArrivalID` for each visit of the vessels, which is defined as 
+`{MMDD}V{VesselID}`.
 
 Thus, let's add a **hook** to the file. First, we create a 
 **hook file** named `vessels.hk` and put it into the `conf` sub-directory.
@@ -127,7 +131,7 @@ dataset
 </pre>
 
 * **Note**: The names of the hook file can be arbitrary, as long as their
-extension names are `.hk`. there can be multiple `.hk` files in the `conf`
+extension names are `.hk`. There can be multiple `.hk` files in the `conf`
 directory, and they will be loaded automatically.
 <a/>
 
@@ -144,8 +148,8 @@ def vel_load_hook(df):
     return df
 ```
 
-Also, we need to change `ArrivalTime`'s type to `datatime64[s]` and add
-the `VesselArrivalID`.
+Also, do not remember to change `ArrivalTime`'s type to `datatime64[s]` and add
+the `VesselArrivalID` field in the configuration file.
 ```
 - DATA:
     raw:
@@ -160,7 +164,6 @@ the `VesselArrivalID`.
           - ArrivalTime: datetime64[s]
           - VesselArrivalID: str
 ```
-
 Let's load this file/fields again:
 ```
 >>> ds = DataSource("./dataset")
@@ -178,8 +181,8 @@ Base:  raw/vessel_info.csv
 
 You may have noticed that, in `vel_load_hook` function, the `ArrivalTime` columns 
 of the transformed DataFrame actually has the type of `datetime64[ns]`. However,
-since we have declare the `ArrivalTime` to be `datetime64[s]` in the configuration.
-Its type has already been converted when doing loading!
+since we have declare the `ArrivalTime` to be `datetime64[s]` in the configuration, 
+its type has already been automatically converted during th loading!
 
 Now, suppose we have another csv file `box_info.csv` records the containers'
 information, including their `BoxID`, `UnloadingVesselArrivalID` and 
