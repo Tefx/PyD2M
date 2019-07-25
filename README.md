@@ -31,7 +31,7 @@ VesselId,Length,ArrivalTime
 ```
 
 First, let's creator a new directory named `dataset` and put
-`vessel_info.csv` under `dataset\raw'. Also, we creater a sub-directory 
+`vessel_info.csv` under `dataset/raw'. Also, we creater a sub-directory 
 `conf` and create a file `d2m.rc`.
 
 ```
@@ -42,7 +42,7 @@ dataset
 |   +-- vessel_info.csv
 ```
 
-`{dataset}\conf\d2m.rc` is the default location of a PyD2M dataset's 
+`{dataset}/conf/d2m.rc` is the default location of a PyD2M dataset's 
 configurations. The configuration file is in YAML format. Now, let's add 
 the following context to this file:
 
@@ -62,14 +62,13 @@ the following context to this file:
 
 Then, the data is ready for managing by PyD2M! First, let's import PyD2M 
 and create a `DataSource` object:
-
 ```
 >>> from pyd2m.datasource import DataSource
 >>> ds = DataSource("./dataset")
 ```
 
-Then, we can use
-
+Then, we can use the `DataSource.load` method to load the file as a 
+pandas DataFrame.
 ```
 >>> ds.load("raw/vessel_info.csv")
 	VesselID 	Length 	ArrivalTime
@@ -81,8 +80,7 @@ Then, we can use
 5 	9 	270 	49759
 ...
 ```
-to load the file, as a pandas DataFrame. Or, we can directly use the field
-names to load the data:
+Or, we can directly use the field names to load the data:
 ```
 >>> ds["VesselID", "Length", "ArrivalTime"]
 Base:  raw/vessel_info.csv
@@ -116,7 +114,7 @@ a unique `VesselArrivalID` to each visit of the vessels, so that later we can
 refer to the visit more easily. The `VesselArrivalID` will be defined as 
 `{MMDD}V{VesselID}`.
 
-To do this, let's add a **hook** to this file. First, we create a 
+Thus, let's add a **hook** to this file. First, we create a 
 **hook file** named `vessels.hk` and put it into the `conf` sub-directory.
 The filename can be arbitrary, but the extension name must be `.hk`. As long as
 a `.hk` file is in the `conf` directory, it will be loaded automatically.
@@ -270,10 +268,13 @@ format.
           - HandlingTime: timedelta64[s]
 ```
 
-Then, use the following code to save the data.
+Then, use the `DataSource.dump` to save the data.
 ```
 >> ds.dump("plan/berthing.msg", df)
 ```
+
+* **Tips**: a hook can also be added to the dumping process. Just use the 
+`@hooks.dump` to decorate a function in any `.hk` files.
 
 Once the file exists, we can use `load` to load it again, or access its
 field directly.
@@ -300,6 +301,29 @@ Base:  plan/berthing.msg
 ```
 
 ## Auto joining
+
+Now, what if we want to analyse the relationships between vessels' lengths 
+and their handling times? To do so, we need the values of both `Length` 
+and `HandlingTime`.  However, there are in different files and of different 
+format! Do we need to load these two files seperately and join them manually?
+The answer is of course not. Instead, we can retrieve these fields directly.
+```
+>>> ds["VesselArrivalID", "Length", "HandlingTime"]
+Base:  raw/vessel_info.csv
+Joining: plan/berthing.msg
+
+	VesselArrivalID 	Length 	HandlingTime
+0 	0101V8 	345 	09:12:38
+1 	0101V7 	217 	09:47:53
+2 	0101V0 	293 	08:55:18
+3 	0101V9 	177 	05:42:23
+4 	0101V6 	115 	10:06:20
+5 	0101V3 	375 	10:11:21
+...
+```
+See? PyD2M has done this joining automatically! 
+
+## Cookbook
 
 
   
