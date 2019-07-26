@@ -290,7 +290,7 @@ Once the file is declared, use the `DataSource.dump` to save the data.
 <a/>
 
 Once the file exists, we can use `load` to load it again, or access its
-field directly.
+fields directly.
 ```
 >>> ds.load("plan/berthing.msg", df)
  	VesselArrivalID 	MooringPosition 	MooringTime 	HandlingTime
