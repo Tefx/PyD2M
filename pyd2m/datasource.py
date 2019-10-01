@@ -28,11 +28,12 @@ class PartialStringFormatter(dict):
 
 class DataSource:
     def __init__(self, data_path, config_path=None,
-                 clear_cache=False, clear_tmp=True, cache_in_memory=False, **vars):
+                 clear_cache=False, clear_tmp=True, cache_in_memory=False, silent=False, **vars):
         self.base = os.path.realpath(os.path.expanduser(data_path))
         self.config_base = config_path or os.path.join(self.base, "conf")
         self.cache_in_memory = cache_in_memory
         self.mem_cache = {}
+        self.silent = silent
 
         self.cookbooks = [cookbook]
         cookbook.DS = self
@@ -110,7 +111,7 @@ class DataSource:
             pattern = Formatter().vformat(os.path.join(self.base, self.expand_path(path)), {}, GlobTrans())
             return [f[len(self.base):].strip("/") for f in glob(pattern, recursive=True)] or None
         else:
-            real_path = os.path.abspath(os.path.join(self.base, path))
+            real_path = os.path.realpath(os.path.join(self.base, path))
             if check_existing and not self.stores[self.config[path_node].type].exists(real_path):
                 return None
             return real_path
@@ -134,7 +135,7 @@ class DataSource:
             data = self.stores[data_conf.type].load(real_path, data_conf)
             for hooks in self.hooks:
                 if path in hooks.load_hooks:
-                    data = hooks.load_hooks[path](data)
+                    data = hooks.load_hooks[path](self, data)
             if not data_conf.free_fields:
                 data = data.reindex(columns=data_conf.fields.keys())
                 fields = {k: v for k, v in data_conf.fields.items() if v != "obj"}
@@ -155,7 +156,7 @@ class DataSource:
         _data = data
         for hooks in self.hooks:
             if path in hooks.dump_hooks:
-                data = hooks.dump_hooks[path](data)
+                data = hooks.dump_hooks[path](self, data)
         dir_path = os.path.split(real_path)[0]
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
@@ -206,7 +207,8 @@ class DataSource:
         if all(self.exists(i, **vars) for i in recipe.dishes):
             return
         from_data = [self.load(path, **vars) for path in recipe.ingredients]
-        print("{} => {} By <{}>".format(recipe.ingredients, recipe.dishes, recipe.name))
+        if not self.silent:
+            print("{} => {} By <{}>".format(recipe.ingredients, recipe.dishes, recipe.name))
         for path, data, svars in recipe.cook(from_data, **self.config.PARAMS):
             _vars = deepcopy(vars)
             _vars.update(svars)
@@ -219,7 +221,8 @@ class DataSource:
 
     def generate(self, path, callback=None, **vars):
         path = self.expand_path(path, vars)
-        print("Generating", self._format_path(path, vars))
+        if not self.silent:
+            print("Generating", self._format_path(path, vars))
         steps = self.search_recipes(path, **vars)
         if not steps:
             if callback:
@@ -309,9 +312,11 @@ class DataSource:
         skip_path = [] if skip_path is None else skip_path
         base, joins, unknown, fs = self.autogen_scheme(path_or_fields, skip_path=skip_path)
         data = self.load(base[0])[base[1]].copy()
-        print("Base: ", base[0])
+        if not self.silent:
+            print("Base: ", base[0])
         for path, keys, fields in joins:
-            print("Joining:", path)
+            if not self.silent:
+                print("Joining:", path)
             data = data.merge(self.load(path)[fields], on=keys, how=how, copy=False)
         data = data.reindex(columns=fs, copy=False)
         return data, unknown

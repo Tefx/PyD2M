@@ -50,7 +50,8 @@ class DSMsgpack(DataStore):
     TYPE_TAG = "msgpack"
 
     def dump(self, path, data, config):
-        data.to_msgpack(path)
+        compress = getattr(config, "MSG_COMPRESS", None)
+        data.to_msgpack(path, compress=compress)
 
     def load(self, path, config):
         return pd.read_msgpack(path)
