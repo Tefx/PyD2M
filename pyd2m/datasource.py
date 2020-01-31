@@ -127,7 +127,9 @@ class DataSource:
             return self.mem_cache[real_path]
         if real_path is None:
             if generate:
-                return self.generate(path, callback=callback, **vars)
+                df = self.generate(path, callback=callback, **vars)
+                setattr(df, "ds_real_path", self.real_path(path, **vars))
+                return df
         elif isinstance(real_path, list):
             return [self.load(path, generate=False) for path in real_path]
         else:
@@ -142,6 +144,7 @@ class DataSource:
                 data = data.astype(dtype=fields, copy=False)
             if self.cache_in_memory:
                 self.mem_cache[real_path] = data
+            setattr(data, "ds_real_path", real_path)
             return data
 
     def dump(self, path, data, **vars):

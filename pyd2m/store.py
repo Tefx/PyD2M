@@ -69,7 +69,11 @@ class DSMsgpackNonDF(DataStore):
             return msgpack.unpack(f)
 
 
-import feather
+try:
+    import feather
+except ImportError:
+    pass
+
 class DSFeather(DataStore):
     TYPE_TAG = "feather"
 
@@ -79,6 +83,16 @@ class DSFeather(DataStore):
 
     def load(self, path, config):
         return feather.read_dataframe(path)
+    
+
+class DSParquet(DataStore):
+    TYPE_TAG = "parquet"
+
+    def dump(self, path, data, config):
+        data.to_parquet(path)
+
+    def load(self, path, config):
+        return pd.read_parquet(path)
 
 
 class DSCsv(DataStore):
