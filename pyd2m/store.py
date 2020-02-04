@@ -3,7 +3,6 @@ import os
 import pandas as pd
 import numpy as np
 import pickle
-import msgpack
 
 
 class DataStore:
@@ -45,6 +44,10 @@ class DSMemory(DataStore):
         if path in self.cache:
             del self.cache[path]
 
+try:
+    import msgpack
+except ImportError:
+    pass
 
 class DSMsgpack(DataStore):
     TYPE_TAG = "msgpack"
@@ -136,3 +139,26 @@ class DSPickle(DataStore):
         with open(path, "rb") as f:
             data = pickle.load(f)
         return data
+    
+try:
+    import umsgpack
+except ImportError:
+    pass
+
+class DSMsgpackStream(DataStore):
+    TYPE_TAG = "msgpack_stream"
+    
+    def dump(self, path, data, config):
+        raise NotImplementedError
+    
+    def load(self, path, config):
+        with open(path, "rb") as f:
+            columns = umsgpack.unpack(f)
+            data = []
+            while True:
+                try:
+                    data.append(umsgpack.unpack(f))
+                except umsgpack.InsufficientDataException:
+                    break
+        return pd.DataFrame(data, columns=columns)
+        

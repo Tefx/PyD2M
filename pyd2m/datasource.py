@@ -120,6 +120,13 @@ class DataSource:
         path = self.expand_path(path, vars)
         return self.real_path(path, **vars, check_existing=True) is not None
 
+    def open(self, path, mode):
+        real_path = self.real_path(path, check_existing=False)
+        dir_path = os.path.split(real_path)[0]
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+        return open(real_path, mode)
+
     def load(self, path, generate=True, callback=None, **vars):
         path = self.expand_path(path, vars)
         real_path = self.real_path(path, check_existing=True, **vars)
