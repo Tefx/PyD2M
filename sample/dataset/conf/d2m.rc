@@ -24,23 +24,23 @@
           - UnloadingVesselArrivalID: str
           - LoadingVesselArrivalID: str
 
-    'plan_{exp}':
-      berthing.msg:
-        TYPE: msgpack
-        FIELDS:
-          - VesselArrivalID: str
-          - MooringPosition: int
-          - MooringTime: datetime64[s]
-          - HandlingTime: timedelta64[s]
-
-      box_pos_time.msg:
-        TYPE: msgpack
-        FIELDS:
-          - BoxID: str
-          - UnloadingPosition: int
-          - UnloadingTime: datetime64[s]
-          - LoadingPosition: int
-          - LoadingTime: datetime64[s]
+#    'plan_{exp}':
+#      berthing.msg:
+#        TYPE: msgpack
+#        FIELDS:
+#          - VesselArrivalID: str
+#          - MooringPosition: int
+#          - MooringTime: datetime64[s]
+#          - HandlingTime: timedelta64[s]
+#
+#      box_pos_time.msg:
+#        TYPE: msgpack
+#        FIELDS:
+#          - BoxID: str
+#          - UnloadingPosition: int
+#          - UnloadingTime: datetime64[s]
+#          - LoadingPosition: int
+#          - LoadingTime: datetime64[s]
 
     tmp:
       '{exp}':

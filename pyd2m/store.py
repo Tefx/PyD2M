@@ -44,32 +44,32 @@ class DSMemory(DataStore):
         if path in self.cache:
             del self.cache[path]
 
-try:
-    import msgpack
-except ImportError:
-    pass
+# try:
+#     import msgpack
+# except ImportError:
+#     pass
+#
+# class DSMsgpack(DataStore):
+#     TYPE_TAG = "msgpack"
+#
+#     def dump(self, path, data, config):
+#         compress = getattr(config, "MSG_COMPRESS", None)
+#         data.to_msgpack(path, compress=compress)
+#
+#     def load(self, path, config):
+#         return pd.read_msgpack(path)
 
-class DSMsgpack(DataStore):
-    TYPE_TAG = "msgpack"
 
-    def dump(self, path, data, config):
-        compress = getattr(config, "MSG_COMPRESS", None)
-        data.to_msgpack(path, compress=compress)
-
-    def load(self, path, config):
-        return pd.read_msgpack(path)
-
-
-class DSMsgpackNonDF(DataStore):
-    TYPE_TAG = "msgpack_ndf"
-
-    def dump(self, path, data, config):
-        with open(path, "wb") as f:
-            msgpack.pack(data, f, use_bin_type=True)
-
-    def load(self, path, config):
-        with open(path, "rb") as f:
-            return msgpack.unpack(f)
+# class DSMsgpackNonDF(DataStore):
+#     TYPE_TAG = "msgpack_ndf"
+#
+#     def dump(self, path, data, config):
+#         with open(path, "wb") as f:
+#             msgpack.pack(data, f, use_bin_type=True)
+#
+#     def load(self, path, config):
+#         with open(path, "rb") as f:
+#             return msgpack.unpack(f)
 
 
 try:
@@ -140,10 +140,8 @@ class DSPickle(DataStore):
             data = pickle.load(f)
         return data
     
-try:
-    import umsgpack
-except ImportError:
-    pass
+import umsgpack
+# umsgpack.compatibility = True
 
 class DSMsgpackStream(DataStore):
     TYPE_TAG = "msgpack_stream"
