@@ -160,3 +160,18 @@ class DSMsgpackStream(DataStore):
                     break
         return pd.DataFrame(data, columns=columns)
         
+class PickleStream(DataStore):
+    TYPE_TAG = "pickle_stream"
+
+    def dump(self, path, data, config):
+        raise NotImplementedError
+
+    def load(self, path, config):
+        data = []
+        with open(path, "rb") as f:
+            try:
+                while True:
+                    data.append(pickle.load(f))
+            except EOFError:
+                pass
+        return data

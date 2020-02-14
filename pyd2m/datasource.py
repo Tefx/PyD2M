@@ -9,6 +9,7 @@ import importlib.machinery
 from glob import glob
 import re
 from contextlib import contextmanager
+import pandas as pd
 
 from .config import Config
 from .cookbook import CookBook, cookbook
@@ -135,7 +136,8 @@ class DataSource:
         if real_path is None:
             if generate:
                 df = self.generate(path, callback=callback, **vars)
-                setattr(df, "ds_real_path", self.real_path(path, **vars))
+                if isinstance(df, pd.DataFrame):
+                    setattr(df, "ds_real_path", self.real_path(path, **vars))
                 return df
         elif isinstance(real_path, list):
             return [self.load(path, generate=False) for path in real_path]
@@ -151,7 +153,8 @@ class DataSource:
                 data = data.astype(dtype=fields, copy=False)
             if self.cache_in_memory:
                 self.mem_cache[real_path] = data
-            setattr(data, "ds_real_path", real_path)
+            if isinstance(data, pd.DataFrame):
+                setattr(data, "ds_real_path", real_path)
             return data
 
     def dump(self, path, data, **vars):
