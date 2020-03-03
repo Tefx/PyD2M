@@ -140,24 +140,24 @@ class DSPickle(DataStore):
             data = pickle.load(f)
         return data
     
-import umsgpack
-# umsgpack.compatibility = True
+import msgpack
 
 class DSMsgpackStream(DataStore):
     TYPE_TAG = "msgpack_stream"
-    
+
     def dump(self, path, data, config):
         raise NotImplementedError
     
     def load(self, path, config):
         with open(path, "rb") as f:
-            columns = umsgpack.unpack(f)
+            unpacker = msgpack.Unpacker(f)
+            columns = unpacker.unpack()
             data = []
-            while True:
-                try:
-                    data.append(umsgpack.unpack(f))
-                except umsgpack.InsufficientDataException:
-                    break
+            try:
+                for item in unpacker:
+                    data.append(item)
+            except msgpack.OutOfData:
+                pass
         return pd.DataFrame(data, columns=columns)
         
 class PickleStream(DataStore):
