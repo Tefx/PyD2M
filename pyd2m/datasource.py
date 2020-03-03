@@ -1,19 +1,16 @@
 import shutil
-import yaml
 import os
 from copy import deepcopy
 from string import Formatter
 import inspect
-import importlib.util
-import importlib.machinery
 from glob import glob
 import re
 from contextlib import contextmanager
 import pandas as pd
 
 from .config import Config
-from .cookbook import CookBook, cookbook
-from .hooks import hooks, Hooks
+from .cookbook import cookbook
+from .hooks import hooks
 from . import store
 
 
@@ -36,40 +33,37 @@ class DataSource:
         self.mem_cache = {}
         self.silent = silent
 
+        self.vars = deepcopy(vars)
         self.cookbooks = [cookbook]
         cookbook.DS = self
-
         self.hooks = [hooks]
-        self.vars = deepcopy(vars)
+
+        self.config = Config(self.config_base)
+        self.cookbooks.extend(self.config.cookbooks())
+        self.hooks.extend(self.config.hooks())
+
         self.stores = {}
-
-        self.config_file = os.path.join(self.config_base, "d2m.rc")
-        self.config = Config()
-        with open(self.config_file, "r") as f:
-            for config in yaml.load(f.read(), Loader=yaml.FullLoader):
-                self.config.update(config)
-
         for name, cls in inspect.getmembers(store, inspect.isclass):
             if issubclass(cls, store.DataStore) and cls.TYPE_TAG is not None:
                 self.stores[cls.TYPE_TAG] = cls()
 
-        with os.scandir(self.config_base) as it:
-            for entry in it:
-                if entry.name.endswith('.cb') and entry.is_file():
-                    loader = importlib.machinery.SourceFileLoader(entry.name[:-3], entry.path)
-                    spec = importlib.util.spec_from_loader(loader.name, loader)
-                    cb = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(cb)
-                    for _, item in inspect.getmembers(cb, inspect.isclass):
-                        if issubclass(item, CookBook) and item is not CookBook:
-                            self.cookbooks.append(item(ds=self))
-                if entry.name.endswith('.hk') and entry.is_file():
-                    loader = importlib.machinery.SourceFileLoader(entry.name[:-3], entry.path)
-                    spec = importlib.util.spec_from_loader(loader.name, loader)
-                    hk = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(hk)
-                    if isinstance(hk.hooks, Hooks) and hk.hooks not in self.hooks:
-                        self.hooks.append(hk.hooks)
+        # with os.scandir(self.config_base) as it:
+        #     for entry in it:
+        #         if entry.name.endswith('.cb') and entry.is_file():
+        #             loader = importlib.machinery.SourceFileLoader(entry.name[:-3], entry.path)
+        #             spec = importlib.util.spec_from_loader(loader.name, loader)
+        #             cb = importlib.util.module_from_spec(spec)
+        #             spec.loader.exec_module(cb)
+        #             for _, item in inspect.getmembers(cb, inspect.isclass):
+        #                 if issubclass(item, CookBook) and item is not CookBook:
+        #                     self.cookbooks.append(item(ds=self))
+        #         if entry.name.endswith('.hk') and entry.is_file():
+        #             loader = importlib.machinery.SourceFileLoader(entry.name[:-3], entry.path)
+        #             spec = importlib.util.spec_from_loader(loader.name, loader)
+        #             hk = importlib.util.module_from_spec(spec)
+        #             spec.loader.exec_module(hk)
+        #             if isinstance(hk.hooks, Hooks) and hk.hooks not in self.hooks:
+        #                 self.hooks.append(hk.hooks)
 
         if clear_tmp is True:
             tmp_path = os.path.join(self.base, "tmp")
@@ -354,3 +348,11 @@ class DataSource:
             return data[gen_fields]
         else:
             return data
+
+    @property
+    def all_files(self):
+        return self.config.all_files
+
+    @property
+    def all_fields(self):
+        return self.config.all_fields
