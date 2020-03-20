@@ -2,6 +2,7 @@ import os
 
 import pandas as pd
 import numpy as np
+import msgpack
 import pickle
 
 
@@ -44,38 +45,12 @@ class DSMemory(DataStore):
         if path in self.cache:
             del self.cache[path]
 
-# try:
-#     import msgpack
-# except ImportError:
-#     pass
-#
-# class DSMsgpack(DataStore):
-#     TYPE_TAG = "msgpack"
-#
-#     def dump(self, path, data, config):
-#         compress = getattr(config, "MSG_COMPRESS", None)
-#         data.to_msgpack(path, compress=compress)
-#
-#     def load(self, path, config):
-#         return pd.read_msgpack(path)
-
-
-# class DSMsgpackNonDF(DataStore):
-#     TYPE_TAG = "msgpack_ndf"
-#
-#     def dump(self, path, data, config):
-#         with open(path, "wb") as f:
-#             msgpack.pack(data, f, use_bin_type=True)
-#
-#     def load(self, path, config):
-#         with open(path, "rb") as f:
-#             return msgpack.unpack(f)
-
 
 try:
     import feather
 except ImportError:
     pass
+
 
 class DSFeather(DataStore):
     TYPE_TAG = "feather"
@@ -86,7 +61,7 @@ class DSFeather(DataStore):
 
     def load(self, path, config):
         return feather.read_dataframe(path)
-    
+
 
 class DSParquet(DataStore):
     TYPE_TAG = "parquet"
@@ -139,15 +114,14 @@ class DSPickle(DataStore):
         with open(path, "rb") as f:
             data = pickle.load(f)
         return data
-    
-import msgpack
+
 
 class DSMsgpackStream(DataStore):
     TYPE_TAG = "msgpack_stream"
 
     def dump(self, path, data, config):
         raise NotImplementedError
-    
+
     def load(self, path, config):
         with open(path, "rb") as f:
             unpacker = msgpack.Unpacker(f)
@@ -159,7 +133,8 @@ class DSMsgpackStream(DataStore):
             except msgpack.OutOfData:
                 pass
         return pd.DataFrame(data, columns=columns)
-        
+
+
 class PickleStream(DataStore):
     TYPE_TAG = "pickle_stream"
 
