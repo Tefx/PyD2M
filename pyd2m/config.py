@@ -1,8 +1,15 @@
+import importlib
+import inspect
+import os
 from collections import OrderedDict
 
 from copy import deepcopy
 import re
 from string import Formatter
+import yaml
+
+from .cookbook import CookBook
+from .hooks import Hooks
 
 
 class RETrans:
@@ -52,6 +59,12 @@ class DataConfig:
         else:
             return set(f for f in fields if f in self.fields)
 
+    def fields(self):
+        if self._config["LOCAL_FIELDS_ONLY"] or self.path.startswith("tmp"):
+            return dict()
+        else:
+            return self.fields
+
     def __getattr__(self, item):
         item = item.upper()
         if item in self._config:
@@ -69,21 +82,64 @@ def _traverse_data(config, path=""):
 
 
 class Config:
-    def __init__(self):
+    def __init__(self, conf_base):
         self.DEFAULTS = dict()
         self.FIELDS = dict()
         self.PARAMS = dict()
         self.DATA = dict()
+        self.conf_base = set()
+        self.read_config(conf_base)
 
-    def update(self, config):
+    def read_config(self, base):
+        if base not in self.conf_base:
+            self.conf_base.add(base)
+            file_path = os.path.join(base, "d2m.rc")
+            with open(file_path, "r") as f:
+                for config in yaml.load(f.read(), Loader=yaml.FullLoader):
+                    self.update(config, file_path)
+
+    def read_includes(self, item, current_file):
+        current_path = os.path.dirname(current_file)
+        include_base = os.path.realpath(os.path.join(current_path, item))
+        self.read_config(include_base)
+
+    def update(self, config, file_path):
         name, config = next(iter(config.items()))
-        if name != "DATA":
+        if name == "INCLUDE":
+            for item in config:
+                self.read_includes(item, file_path)
+        elif name != "DATA":
             setattr(self, name, deep_update(getattr(self, name), config))
         else:
             for path, data_conf in _traverse_data(config):
                 data = DataConfig(path, data_conf, defaults=self.DEFAULTS, declared_fields=self.FIELDS)
                 self.DATA[path] = data
                 self.FIELDS = deep_update(self.FIELDS, data.fields)
+
+    def cookbooks(self):
+        for base in self.conf_base:
+            with os.scandir(base) as it:
+                for entry in it:
+                    if entry.name.endswith('.cb') and entry.is_file():
+                        loader = importlib.machinery.SourceFileLoader(entry.name[:-3], entry.path)
+                        spec = importlib.util.spec_from_loader(loader.name, loader)
+                        cb = importlib.util.module_from_spec(spec)
+                        spec.loader.exec_module(cb)
+                        for _, item in inspect.getmembers(cb, inspect.isclass):
+                            if issubclass(item, CookBook) and item is not CookBook:
+                                yield item(ds=self)
+
+    def hooks(self):
+        for base in self.conf_base:
+            with os.scandir(base) as it:
+                for entry in it:
+                    if entry.name.endswith('.hk') and entry.is_file():
+                        loader = importlib.machinery.SourceFileLoader(entry.name[:-3], entry.path)
+                        spec = importlib.util.spec_from_loader(loader.name, loader)
+                        hk = importlib.util.module_from_spec(spec)
+                        spec.loader.exec_module(hk)
+                        if isinstance(hk.hooks, Hooks) and hk.hooks not in self.hooks:
+                            yield hk.hooks
 
     def __getitem__(self, item):
         return self.DATA[item]
@@ -105,3 +161,15 @@ class Config:
             matches = cmp_path(pattern, path)
             if matches is not None:
                 return pattern, matches
+
+    @property
+    def all_files(self):
+        return set(self.DATA.keys())
+
+    @property
+    def all_fields(self):
+        s = dict()
+        for value in self.DATA.values():
+            s.update(value.fields)
+        return s
+
