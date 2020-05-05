@@ -356,3 +356,7 @@ class DataSource:
     @property
     def all_fields(self):
         return self.config.all_fields
+
+    def dump_as_df(self, path, data, **kwargs):
+        df = pd.DataFrame(data, columns=self.fields(path))
+        self.dump(path, df, **kwargs)
