@@ -115,6 +115,35 @@ class DSPickle(DataStore):
             data = pickle.load(f)
         return data
 
+import json
+
+class DSJSON(DataStore):
+    TYPE_TAG = "json"
+
+    def dump(self, path, data, config):
+        with open(path, "w") as f:
+            json.dump(data, f)
+
+    def load(self, path, config):
+        with open(path, "r") as f:
+            data = json.load(f)
+        return data
+
+class DSStrList(DataStore):
+    TYPE_TAG = "str_list"
+
+    def dump(self, path, data, config):
+        with open(path, "w") as f:
+            f.write("\n".join(data))
+
+    def load(self, path, config):
+        data = []
+        with open(path, "r") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    data.append(line)
+        return data
 
 class DSMsgpackStream(DataStore):
     TYPE_TAG = "msgpack_stream"

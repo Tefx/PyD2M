@@ -28,7 +28,7 @@ class Recipe:
     def cook(self, ingredients, **condiments):
         condiments = {k: v for k, v in condiments.items() if k in inspect.signature(self.procedure).parameters.keys()}
         dishes = self.procedure(self.cookbook, *ingredients, **condiments)
-        if not isinstance(dishes, tuple):
+        if not isinstance(dishes, tuple) or len(dishes) != len(self.dishes):
             dishes = dishes,
         for dish, path in zip(dishes, self.dishes):
             if isinstance(dish, MultiData):

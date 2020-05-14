@@ -1,6 +1,6 @@
 import shutil
 import os
-from copy import deepcopy
+from copy import copy, deepcopy
 from string import Formatter
 import inspect
 from glob import glob
@@ -115,8 +115,8 @@ class DataSource:
         path = self.expand_path(path, vars)
         return self.real_path(path, **vars, check_existing=True) is not None
 
-    def open(self, path, mode):
-        real_path = self.real_path(path, check_existing=False)
+    def open(self, path, mode, **vars):
+        real_path = self.real_path(path, check_existing=False, **vars)
         dir_path = os.path.split(real_path)[0]
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
@@ -216,7 +216,10 @@ class DataSource:
         from_data = [self.load(path, **vars) for path in recipe.ingredients]
         if not self.silent:
             print("{} => {} By <{}>".format(recipe.ingredients, recipe.dishes, recipe.name))
-        for path, data, svars in recipe.cook(from_data, **self.config.PARAMS):
+        condiments = copy(self.config.PARAMS)
+        condiments.update(self.vars)
+        condiments.update(vars)
+        for path, data, svars in recipe.cook(from_data, **condiments):
             _vars = deepcopy(vars)
             _vars.update(svars)
             self.dump(path, data, **_vars)
