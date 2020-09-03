@@ -143,7 +143,17 @@ class DataSource:
                     data = hooks.load_hooks[path](self, data)
             if not data_conf.free_fields:
                 data = data.reindex(columns=data_conf.fields.keys())
-                fields = {k: v for k, v in data_conf.fields.items() if v != "obj"}
+
+                fields = {}
+                for k, v in data_conf.fields.items():
+                    if v == "obj":
+                        continue
+                    elif v == "bytes":
+                        data[k] = data[k].str.decode("utf-8")
+                        v = "str"
+                    fields[k] = v
+
+                # fields = {k: v for k, v in data_conf.fields.items() if v != "obj"}
                 data = data.astype(dtype=fields, copy=False)
             if self.cache_in_memory:
                 self.mem_cache[real_path] = data
