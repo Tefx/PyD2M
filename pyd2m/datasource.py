@@ -168,7 +168,12 @@ class DataSource:
         data_conf = self.config[path]
         if not data_conf.free_fields:
             data = data.reindex(columns=data_conf.fields.keys())
-            fields = {k: v for k, v in data_conf.fields.items() if v != "obj"}
+            fields = {}
+            for k, v in data_conf.fields.items():
+                if v in ["obj", "bytes"]:
+                    continue
+                fields[k] = v
+            # fields = {k: v for k, v in data_conf.fields.items() if v != "obj"}
             data = data.astype(dtype=fields, copy=False)
         _data = data
         for hooks in self.hooks:
